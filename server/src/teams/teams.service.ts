@@ -16,6 +16,31 @@ export class TeamsService {
     });
   }
 
+  create(data: {
+    name: string;
+    stadium?: string;
+    founded_year?: number;
+    city_id: number;
+  }) {
+    return this.prisma.teams.create({ data });
+  }
+
+  update(
+    id: number,
+    data: {
+      name?: string;
+      stadium?: string;
+      founded_year?: number;
+      city_id?: number;
+    },
+  ) {
+    return this.prisma.teams.update({ where: { id }, data });
+  }
+
+  remove(id: number) {
+    return this.prisma.teams.delete({ where: { id } });
+  }
+
   findOne(id: number) {
     return this.prisma.teams.findUnique({
       where: { id },

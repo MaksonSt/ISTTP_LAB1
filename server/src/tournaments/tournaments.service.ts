@@ -5,6 +5,30 @@ import { PrismaService } from '../prisma.service';
 export class TournamentsService {
   constructor(private prisma: PrismaService) {}
 
+  create(data: { name: string; season: string; start_date?: string; end_date?: string; country_id: number }) {
+    return this.prisma.tournaments.create({ data: {
+      name: data.name,
+      season: data.season,
+      country_id: data.country_id,
+      start_date: data.start_date ? new Date(data.start_date) : undefined,
+      end_date: data.end_date ? new Date(data.end_date) : undefined,
+    }});
+  }
+
+  update(id: number, data: { name?: string; season?: string; start_date?: string; end_date?: string; country_id?: number }) {
+    return this.prisma.tournaments.update({ where: { id }, data: {
+      name: data.name,
+      season: data.season,
+      country_id: data.country_id,
+      start_date: data.start_date ? new Date(data.start_date) : undefined,
+      end_date: data.end_date ? new Date(data.end_date) : undefined,
+    }});
+  }
+
+  remove(id: number) {
+    return this.prisma.tournaments.delete({ where: { id } });
+  }
+
   findAll() {
     return this.prisma.tournaments.findMany({
       include: {
@@ -64,17 +88,28 @@ export class TournamentsService {
       }
     > = {};
 
+    // Initialize from tournament_teams first (teams that may not have played yet)
     for (const tt of tournament.tournament_teams) {
       table[tt.team_id] = {
         team: { id: tt.teams.id, name: tt.teams.name },
-        played: 0,
-        won: 0,
-        drawn: 0,
-        lost: 0,
-        gf: 0,
-        ga: 0,
-        points: 0,
+        played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, points: 0,
       };
+    }
+
+    // Also ensure any team appearing in matches is in the table
+    for (const m of tournament.matches) {
+      if (!table[m.home_team_id]) {
+        table[m.home_team_id] = {
+          team: { id: m.teams_matches_home_team_idToteams.id, name: m.teams_matches_home_team_idToteams.name },
+          played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, points: 0,
+        };
+      }
+      if (!table[m.away_team_id]) {
+        table[m.away_team_id] = {
+          team: { id: m.teams_matches_away_team_idToteams.id, name: m.teams_matches_away_team_idToteams.name },
+          played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, points: 0,
+        };
+      }
     }
 
     for (const m of tournament.matches) {

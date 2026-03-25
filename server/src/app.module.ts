@@ -5,9 +5,10 @@ import { PrismaService } from './prisma.service';
 import { PlayersModule } from './players/players.module';
 import { TeamsModule } from './teams/teams.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
+import { MatchesModule } from './matches/matches.module';
 
 @Module({
-  imports: [PlayersModule, TeamsModule, TournamentsModule],
+  imports: [PlayersModule, TeamsModule, TournamentsModule, MatchesModule],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })

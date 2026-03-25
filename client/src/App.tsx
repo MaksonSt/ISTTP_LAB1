@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import styled from 'styled-components'
 import PlayersPage from './pages/PlayersPage'
 import PlayerDetailPage from './pages/PlayerDetailPage'
+import TeamsPage from './pages/TeamsPage'
+import TeamDetailPage from './pages/TeamDetailPage'
 
 function App() {
   return (
@@ -9,11 +11,14 @@ function App() {
       <Nav>
         <Logo>FootballHub</Logo>
         <NavLink to="/players">Players</NavLink>
+        <NavLink to="/teams">Clubs</NavLink>
       </Nav>
       <Main>
         <Routes>
           <Route path="/players" element={<PlayersPage />} />
           <Route path="/players/:id" element={<PlayerDetailPage />} />
+          <Route path="/teams" element={<TeamsPage />} />
+          <Route path="/teams/:id" element={<TeamDetailPage />} />
           <Route path="/" element={<PlayersPage />} />
         </Routes>
       </Main>

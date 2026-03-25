@@ -71,14 +71,15 @@ export class PlayersService {
     },
   ) {
     const { team_id, ...playerData } = data;
-    const player = await this.prisma.players.update({ where: { id }, data: playerData });
+    const player = await this.prisma.players.update({
+      where: { id },
+      data: playerData,
+    });
     if (team_id !== undefined) {
-      // Close current club
       await this.prisma.team_players.updateMany({
         where: { player_id: id, left_date: null },
         data: { left_date: new Date() },
       });
-      // Assign new club
       if (team_id) {
         await this.prisma.team_players.create({
           data: { player_id: id, team_id, joined_date: new Date() },

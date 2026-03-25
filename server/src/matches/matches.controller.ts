@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Param, Query, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Query,
+  Body,
+} from '@nestjs/common';
 import { MatchesService } from './matches.service';
 
 @Controller('matches')
@@ -7,7 +16,9 @@ export class MatchesController {
 
   @Get()
   findAll(@Query('tournamentId') tournamentId?: string) {
-    return this.matchesService.findAll(tournamentId ? +tournamentId : undefined);
+    return this.matchesService.findAll(
+      tournamentId ? +tournamentId : undefined,
+    );
   }
 
   @Get(':id')

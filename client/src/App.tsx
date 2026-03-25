@@ -4,6 +4,8 @@ import PlayersPage from './pages/PlayersPage'
 import PlayerDetailPage from './pages/PlayerDetailPage'
 import TeamsPage from './pages/TeamsPage'
 import TeamDetailPage from './pages/TeamDetailPage'
+import TournamentsPage from './pages/TournamentsPage'
+import TournamentDetailPage from './pages/TournamentDetailPage'
 
 function App() {
   return (
@@ -12,6 +14,7 @@ function App() {
         <Logo>FootballHub</Logo>
         <NavLink to="/players">Players</NavLink>
         <NavLink to="/teams">Clubs</NavLink>
+        <NavLink to="/tournaments">Tournaments</NavLink>
       </Nav>
       <Main>
         <Routes>
@@ -19,6 +22,8 @@ function App() {
           <Route path="/players/:id" element={<PlayerDetailPage />} />
           <Route path="/teams" element={<TeamsPage />} />
           <Route path="/teams/:id" element={<TeamDetailPage />} />
+          <Route path="/tournaments" element={<TournamentsPage />} />
+          <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
           <Route path="/" element={<PlayersPage />} />
         </Routes>
       </Main>

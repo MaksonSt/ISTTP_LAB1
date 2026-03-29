@@ -7,6 +7,7 @@ import { TeamsModule } from './teams/teams.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
 import { MatchesModule } from './matches/matches.module';
 import { MetaModule } from './meta/meta.module';
+import { StatsModule } from './stats/stats.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { MetaModule } from './meta/meta.module';
     TournamentsModule,
     MatchesModule,
     MetaModule,
+    StatsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

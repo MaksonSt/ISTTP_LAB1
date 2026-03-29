@@ -8,6 +8,7 @@ import TournamentsPage from './pages/TournamentsPage'
 import TournamentDetailPage from './pages/TournamentDetailPage'
 import MatchesPage from './pages/MatchesPage'
 import MatchDetailPage from './pages/MatchDetailPage'
+import StatsPage from './pages/StatsPage'
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <NavLink to="/teams">Clubs</NavLink>
         <NavLink to="/tournaments">Tournaments</NavLink>
         <NavLink to="/matches">Matches</NavLink>
+        <NavLink to="/stats">Stats</NavLink>
       </Nav>
       <Main>
         <Routes>
@@ -29,6 +31,7 @@ function App() {
           <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
           <Route path="/matches" element={<MatchesPage />} />
           <Route path="/matches/:id" element={<MatchDetailPage />} />
+          <Route path="/stats" element={<StatsPage />} />
           <Route path="/" element={<PlayersPage />} />
         </Routes>
       </Main>

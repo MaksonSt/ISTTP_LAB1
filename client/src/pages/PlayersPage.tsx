@@ -70,7 +70,7 @@ export default function PlayersPage() {
     if (!confirm('Delete this player?')) return
     await fetch(`/api/players/${id}`, { method: 'DELETE' })
     load(search)
-  }
+  } 
 
   const handleSubmit = async () => {
     const body = {

@@ -90,7 +90,10 @@ export class PlayersService {
     return player;
   }
 
-  remove(id: number) {
+  async remove(id: number) {
+    await this.prisma.match_stats.deleteMany({ where: { player_id: id } });
+    await this.prisma.team_players.deleteMany({ where: { player_id: id } });
+    await this.prisma.transfers.deleteMany({ where: { player_id: id } });
     return this.prisma.players.delete({ where: { id } });
   }
 

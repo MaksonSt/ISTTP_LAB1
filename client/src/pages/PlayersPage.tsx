@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
 import Modal, { Field, Label, Input, Select, FormActions, BtnPrimary, BtnSecondary } from '../components/Modal'
@@ -30,6 +30,7 @@ export default function PlayersPage() {
   const [editing, setEditing] = useState<Player | null>(null)
   const [form, setForm] = useState(emptyForm)
   const navigate = useNavigate()
+  const importRef = useRef<HTMLInputElement>(null)
 
   const load = (s: string) => {
     const query = s ? `?search=${encodeURIComponent(s)}` : ''
@@ -91,6 +92,29 @@ export default function PlayersPage() {
     load(search)
   }
 
+  const handleExport = async () => {
+    const res = await fetch('/api/players/export')
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'players.xlsx'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch('/api/players/import', { method: 'POST', body: fd })
+    const result = await res.json()
+    alert(`Imported: ${result.created} players, skipped: ${result.skipped}`)
+    e.target.value = ''
+    load(search)
+  }
+
   const f = (key: keyof typeof form) => ({
     value: form[key],
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -103,6 +127,9 @@ export default function PlayersPage() {
         <Title>Players</Title>
         <HeaderRight>
           <SearchInput placeholder="Search by name..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <ExcelBtn onClick={handleExport}>Export Excel</ExcelBtn>
+          <ExcelBtn onClick={() => importRef.current?.click()}>Import Excel</ExcelBtn>
+          <input ref={importRef} type="file" accept=".xlsx" style={{ display: 'none' }} onChange={handleImport} />
           <AddBtn onClick={openAdd}>+ Add Player</AddBtn>
         </HeaderRight>
       </Header>
@@ -204,6 +231,19 @@ const SearchInput = styled.input`
   width: 220px;
   outline: none;
   &:focus { border-color: #4fc3f7; }
+`
+
+const ExcelBtn = styled.button`
+  background: transparent;
+  color: #66bb6a;
+  border: 1px solid #66bb6a;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  &:hover { background: #66bb6a; color: #0f0f1a; }
 `
 
 const AddBtn = styled.button`

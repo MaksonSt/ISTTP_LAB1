@@ -1,12 +1,13 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Res } from '@nestjs/common';
+import type { Response } from 'express';
+import * as ExcelJS from 'exceljs';
 import { PrismaService } from '../prisma.service';
 
 @Controller('stats')
 export class StatsController {
   constructor(private prisma: PrismaService) {}
 
-  @Get()
-  async getAll() {
+  private async computeStats() {
     const [matchStats, matches, players] = await Promise.all([
       this.prisma.match_stats.findMany({
         include: {
@@ -85,5 +86,51 @@ export class StatsController {
     }));
 
     return { topScorers, goalsByTeam, playersByPosition };
+  }
+
+  @Get()
+  getAll() {
+    return this.computeStats();
+  }
+
+  @Get('export')
+  async exportExcel(@Res() res: Response) {
+    const { topScorers, goalsByTeam, playersByPosition } = await this.computeStats();
+
+    const workbook = new ExcelJS.Workbook();
+
+    const s1 = workbook.addWorksheet('Top Scorers');
+    s1.columns = [
+      { header: 'Player', key: 'name', width: 25 },
+      { header: 'Club', key: 'team', width: 25 },
+      { header: 'Goals', key: 'goals', width: 10 },
+      { header: 'Assists', key: 'assists', width: 10 },
+    ];
+    s1.getRow(1).font = { bold: true };
+    topScorers.forEach((r) => s1.addRow(r));
+
+    const s2 = workbook.addWorksheet('Goals by Team');
+    s2.columns = [
+      { header: 'Club', key: 'name', width: 25 },
+      { header: 'Scored', key: 'scored', width: 12 },
+      { header: 'Conceded', key: 'conceded', width: 12 },
+    ];
+    s2.getRow(1).font = { bold: true };
+    goalsByTeam.forEach((r) => s2.addRow(r));
+
+    const s3 = workbook.addWorksheet('Players by Position');
+    s3.columns = [
+      { header: 'Position', key: 'position', width: 25 },
+      { header: 'Count', key: 'count', width: 10 },
+    ];
+    s3.getRow(1).font = { bold: true };
+    playersByPosition.forEach((r) => s3.addRow(r));
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': 'attachment; filename="stats-report.xlsx"',
+    });
+    res.send(buffer);
   }
 }

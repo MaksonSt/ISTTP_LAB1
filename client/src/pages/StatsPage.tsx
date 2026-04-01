@@ -23,12 +23,26 @@ export default function StatsPage() {
       .then((d) => { setData(d); setLoading(false) })
   }, [])
 
+  const handleExport = async () => {
+    const res = await fetch('/api/stats/export')
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'stats-report.xlsx'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   if (loading) return <Message>Loading...</Message>
   if (!data) return <Message>No data</Message>
 
   return (
     <Page>
-      <Title>Statistics</Title>
+      <PageHeader>
+        <Title>Statistics</Title>
+        <ExportBtn onClick={handleExport}>Export Report</ExportBtn>
+      </PageHeader>
 
       <Grid>
         <Card>
@@ -121,6 +135,25 @@ export default function StatsPage() {
   )
 }
 
+const PageHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+`
+
+const ExportBtn = styled.button`
+  background: transparent;
+  color: #66bb6a;
+  border: 1px solid #66bb6a;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  &:hover { background: #66bb6a; color: #0f0f1a; }
+`
+
 const Page = styled.div`
   max-width: 1100px;
   margin: 0 auto;
@@ -130,7 +163,7 @@ const Page = styled.div`
 const Title = styled.h1`
   font-size: 24px;
   color: #fff;
-  margin: 0 0 24px;
+  margin: 0;
 `
 
 const Grid = styled.div`
@@ -158,7 +191,7 @@ const CardTitle = styled.h2`
 
 const ChartLegend = styled.div`
   display: flex;
-  gap: 16px;
+  gap: 16px;      
   margin-top: 12px;
   font-size: 12px;
   color: #888;

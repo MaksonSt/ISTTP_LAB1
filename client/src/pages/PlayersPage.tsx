@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
 import Modal, { Field, Label, Input, Select, FormActions, BtnPrimary, BtnSecondary } from '../components/Modal'
 
+interface User {
+  id: number
+  email: string
+  role: 'USER' | 'ADMIN'
+}
+
 interface Player {
   id: number
   first_name: string
@@ -10,7 +16,7 @@ interface Player {
   born_year: number | null
   jersey_number: number | null
   salary: string | null
-  positions: { name: string; short_name: string }
+  positions: { id: number; name: string; short_name: string }
   team_players: Array<{ teams: { name: string } }>
 }
 
@@ -21,7 +27,7 @@ interface Meta {
 
 const emptyForm = { first_name: '', last_name: '', position_id: '', jersey_number: '', born_year: '', salary: '', team_id: '' }
 
-export default function PlayersPage() {
+export default function PlayersPage({ user }: { user: User }) {
   const [players, setPlayers] = useState<Player[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -32,18 +38,24 @@ export default function PlayersPage() {
   const navigate = useNavigate()
   const importRef = useRef<HTMLInputElement>(null)
 
+  const token = localStorage.getItem('token')
+
   const load = (s: string) => {
     const query = s ? `?search=${encodeURIComponent(s)}` : ''
-    fetch(`/api/players${query}`)
+    fetch(`/api/players${query}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
       .then((r) => r.json())
       .then((data) => { setPlayers(Array.isArray(data) ? data : []); setLoading(false) })
   }
 
   useEffect(() => {
-    fetch('/api/meta').then((r) => r.json()).then(setMeta)
-  }, [])
+    fetch('/api/meta', {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then((r) => r.json()).then(setMeta)
+  }, [token])
 
-  useEffect(() => { load(search) }, [search])
+  useEffect(() => { load(search) }, [search, token])
 
   const openAdd = () => {
     setEditing(null)
@@ -57,7 +69,7 @@ export default function PlayersPage() {
     setForm({
       first_name: p.first_name,
       last_name: p.last_name,
-      position_id: String(p.positions?.['id'] ?? ''),
+      position_id: String(p.positions?.id ?? ''),
       jersey_number: p.jersey_number ? String(p.jersey_number) : '',
       born_year: p.born_year ? String(p.born_year) : '',
       salary: p.salary ? String(p.salary) : '',
@@ -69,9 +81,12 @@ export default function PlayersPage() {
   const handleDelete = async (e: React.MouseEvent, id: number) => {
     e.stopPropagation()
     if (!confirm('Delete this player?')) return
-    await fetch(`/api/players/${id}`, { method: 'DELETE' })
+    await fetch(`/api/players/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    })
     load(search)
-  } 
+  }
 
   const handleSubmit = async () => {
     const body = {
@@ -84,16 +99,26 @@ export default function PlayersPage() {
       team_id: form.team_id ? Number(form.team_id) : undefined,
     }
     if (modal === 'add') {
-      await fetch('/api/players', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      await fetch('/api/players', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      })
     } else if (editing) {
-      await fetch(`/api/players/${editing.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      await fetch(`/api/players/${editing.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      })
     }
     setModal(null)
     load(search)
   }
 
   const handleExport = async () => {
-    const res = await fetch('/api/players/export')
+    const res = await fetch('/api/players/export', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -108,7 +133,11 @@ export default function PlayersPage() {
     if (!file) return
     const fd = new FormData()
     fd.append('file', file)
-    const res = await fetch('/api/players/import', { method: 'POST', body: fd })
+    const res = await fetch('/api/players/import', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    })
     const result = await res.json()
     alert(`Imported: ${result.created} players, skipped: ${result.skipped}`)
     e.target.value = ''
@@ -127,10 +156,14 @@ export default function PlayersPage() {
         <Title>Players</Title>
         <HeaderRight>
           <SearchInput placeholder="Search by name..." value={search} onChange={(e) => setSearch(e.target.value)} />
-          <ExcelBtn onClick={handleExport}>Export Excel</ExcelBtn>
-          <ExcelBtn onClick={() => importRef.current?.click()}>Import Excel</ExcelBtn>
-          <input ref={importRef} type="file" accept=".xlsx" style={{ display: 'none' }} onChange={handleImport} />
-          <AddBtn onClick={openAdd}>+ Add Player</AddBtn>
+          {user.role === 'ADMIN' && (
+            <>
+              <ExcelBtn onClick={handleExport}>Export Excel</ExcelBtn>
+              <ExcelBtn onClick={() => importRef.current?.click()}>Import Excel</ExcelBtn>
+              <input ref={importRef} type="file" accept=".xlsx" style={{ display: 'none' }} onChange={handleImport} />
+              <AddBtn onClick={openAdd}>+ Add Player</AddBtn>
+            </>
+          )}
         </HeaderRight>
       </Header>
 
@@ -164,8 +197,12 @@ export default function PlayersPage() {
                   <Td $dim $right>{p.salary ? `$${Number(p.salary).toLocaleString()}` : '—'}</Td>
                   <Td>
                     <Actions>
-                      <ActionBtn onClick={(e) => openEdit(e, p)}>Edit</ActionBtn>
-                      <ActionBtn $danger onClick={(e) => handleDelete(e, p.id)}>Del</ActionBtn>
+                      {user.role === 'ADMIN' && (
+                        <>
+                          <ActionBtn onClick={(e) => openEdit(e, p)}>Edit</ActionBtn>
+                          <ActionBtn $danger onClick={(e) => handleDelete(e, p.id)}>Del</ActionBtn>
+                        </>
+                      )}
                     </Actions>
                   </Td>
                 </Tr>
@@ -175,7 +212,7 @@ export default function PlayersPage() {
         </Table>
       )}
 
-      {modal && (
+      {modal && user.role === 'ADMIN' && (
         <Modal title={modal === 'add' ? 'Add Player' : 'Edit Player'} onClose={() => setModal(null)}>
           <Field><Label>First Name</Label><Input {...f('first_name')} /></Field>
           <Field><Label>Last Name</Label><Input {...f('last_name')} /></Field>

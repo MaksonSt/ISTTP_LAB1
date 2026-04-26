@@ -4,6 +4,12 @@ import styled from 'styled-components'
 import { getTeamLogo } from '../utils/teamLogos'
 import Modal, { Field, Label, Input, Select, FormActions, BtnPrimary, BtnSecondary } from '../components/Modal'
 
+interface User {
+  id: number
+  email: string
+  role: 'USER' | 'ADMIN'
+}
+
 interface Team {
   id: number
   name: string
@@ -20,7 +26,7 @@ interface Meta {
 
 const emptyForm = { name: '', stadium: '', founded_year: '', city_id: '' }
 
-export default function TeamsPage() {
+export default function TeamsPage({ user }: { user: User }) {
   const [teams, setTeams] = useState<Team[]>([])
   const [loading, setLoading] = useState(true)
   const [meta, setMeta] = useState<Meta>({ cities: [] })
@@ -28,18 +34,19 @@ export default function TeamsPage() {
   const [editing, setEditing] = useState<Team | null>(null)
   const [form, setForm] = useState(emptyForm)
   const navigate = useNavigate()
+  const token = localStorage.getItem('token')
 
   const load = () => {
-    fetch('/api/teams')
+    fetch('/api/teams', { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((data) => { setTeams(Array.isArray(data) ? data : []); setLoading(false) })
   }
 
   useEffect(() => {
-    fetch('/api/meta').then((r) => r.json()).then(setMeta)
-  }, [])
+    fetch('/api/meta', { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()).then(setMeta)
+  }, [token])
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [token])
 
   const openAdd = () => { setEditing(null); setForm(emptyForm); setModal('add') }
 
@@ -53,7 +60,7 @@ export default function TeamsPage() {
   const handleDelete = async (e: React.MouseEvent, id: number) => {
     e.stopPropagation()
     if (!confirm('Delete this team?')) return
-    await fetch(`/api/teams/${id}`, { method: 'DELETE' })
+    await fetch(`/api/teams/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
     load()
   }
 
@@ -65,9 +72,9 @@ export default function TeamsPage() {
       city_id: Number(form.city_id),
     }
     if (modal === 'add') {
-      await fetch('/api/teams', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      await fetch('/api/teams', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) })
     } else if (editing) {
-      await fetch(`/api/teams/${editing.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      await fetch(`/api/teams/${editing.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) })
     }
     setModal(null)
     load()
@@ -83,7 +90,7 @@ export default function TeamsPage() {
     <Page>
       <Header>
         <Title>Clubs</Title>
-        <AddBtn onClick={openAdd}>+ Add Club</AddBtn>
+        {user.role === 'ADMIN' && <AddBtn onClick={openAdd}>+ Add Club</AddBtn>}
       </Header>
 
       {loading && <Message>Loading...</Message>}
@@ -119,8 +126,12 @@ export default function TeamsPage() {
               <Td $dim $right>{t._count.team_players}</Td>
               <Td>
                 <Actions>
-                  <ActionBtn onClick={(e) => openEdit(e, t)}>Edit</ActionBtn>
-                  <ActionBtn $danger onClick={(e) => handleDelete(e, t.id)}>Del</ActionBtn>
+                  {user.role === 'ADMIN' && (
+                    <>
+                      <ActionBtn onClick={(e) => openEdit(e, t)}>Edit</ActionBtn>
+                      <ActionBtn $danger onClick={(e) => handleDelete(e, t.id)}>Del</ActionBtn>
+                    </>
+                  )}
                 </Actions>
               </Td>
             </Tr>
@@ -128,7 +139,7 @@ export default function TeamsPage() {
         </tbody>
       </Table>
 
-      {modal && (
+      {modal && user.role === 'ADMIN' && (
         <Modal title={modal === 'add' ? 'Add Club' : 'Edit Club'} onClose={() => setModal(null)}>
           <Field><Label>Club Name</Label><Input {...f('name')} /></Field>
           <Field><Label>Stadium</Label><Input {...f('stadium')} /></Field>

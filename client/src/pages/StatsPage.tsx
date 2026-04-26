@@ -5,6 +5,12 @@ import {
 } from 'recharts'
 import styled from 'styled-components'
 
+interface User {
+  id: number
+  email: string
+  role: 'USER' | 'ADMIN'
+}
+
 interface StatsData {
   topScorers: { id: number; name: string; team: string; goals: number; assists: number }[]
   goalsByTeam: { name: string; scored: number; conceded: number }[]
@@ -13,18 +19,24 @@ interface StatsData {
 
 const PIE_COLORS = ['#4fc3f7', '#cc2229', '#346ba5', '#f9a825', '#66bb6a', '#ab47bc']
 
-export default function StatsPage() {
+export default function StatsPage({ user }: { user: User }) {
   const [data, setData] = useState<StatsData | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const token = localStorage.getItem('token')
+
   useEffect(() => {
-    fetch('/api/stats')
+    fetch('/api/stats', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false) })
-  }, [])
+  }, [token])
 
   const handleExport = async () => {
-    const res = await fetch('/api/stats/export')
+    const res = await fetch('/api/stats/export', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -41,7 +53,9 @@ export default function StatsPage() {
     <Page>
       <PageHeader>
         <Title>Statistics</Title>
-        <ExportBtn onClick={handleExport}>Export Report</ExportBtn>
+        {user.role === 'ADMIN' && (
+          <ExportBtn onClick={handleExport}>Export Report</ExportBtn>
+        )}
       </PageHeader>
 
       <Grid>

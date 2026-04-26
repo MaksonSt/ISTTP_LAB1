@@ -1,4 +1,5 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { PrismaService } from '../prisma.service';
 
 @Controller('meta')
@@ -6,6 +7,7 @@ export class MetaController {
   constructor(private prisma: PrismaService) {}
 
   @Get()
+  @UseGuards(AuthGuard('jwt'))
   async getAll() {
     const [positions, cities, countries, referees, teams, tournaments] =
       await Promise.all([

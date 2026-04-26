@@ -6,6 +6,19 @@ datasource db {
   provider = "postgresql"
 }
 
+enum role {
+  USER
+  ADMIN
+}
+
+model users {
+  id        Int     @id @default(autoincrement())
+  email     String  @unique
+  password  String
+  role      role    @default(USER)
+  created_at DateTime @default(now())
+}
+
 model match_stats {
   id             Int     @id @default(autoincrement())
   match_id       Int

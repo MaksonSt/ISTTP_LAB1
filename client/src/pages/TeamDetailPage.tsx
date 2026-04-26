@@ -44,12 +44,13 @@ export default function TeamDetailPage() {
   const { id } = useParams()
   const [team, setTeam] = useState<TeamDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const token = localStorage.getItem('token')
 
   useEffect(() => {
-    fetch(`/api/teams/${id}`)
+    fetch(`/api/teams/${id}`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((data) => { setTeam(data); setLoading(false) })
-  }, [id])
+  }, [id, token])
 
   if (loading) return <Message>Loading...</Message>
   if (!team) return <Message>Team not found</Message>

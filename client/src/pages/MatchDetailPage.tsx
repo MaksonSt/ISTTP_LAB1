@@ -32,12 +32,13 @@ export default function MatchDetailPage() {
   const { id } = useParams()
   const [match, setMatch] = useState<MatchDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const token = localStorage.getItem('token')
 
   useEffect(() => {
-    fetch(`/api/matches/${id}`)
+    fetch(`/api/matches/${id}`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((data) => { setMatch(data); setLoading(false) })
-  }, [id])
+  }, [id, token])
 
   if (loading) return <Message>Loading...</Message>
   if (!match) return <Message>Match not found</Message>

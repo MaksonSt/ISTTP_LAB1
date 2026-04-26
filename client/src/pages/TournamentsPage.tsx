@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
 import Modal, { Field, Label, Input, Select, FormActions, BtnPrimary, BtnSecondary } from '../components/Modal'
 
+interface User {
+  id: number
+  email: string
+  role: 'USER' | 'ADMIN'
+}
+
 interface Tournament {
   id: number
   name: string
@@ -19,7 +25,7 @@ interface Meta {
 
 const emptyForm = { name: '', season: '', start_date: '', end_date: '', country_id: '' }
 
-export default function TournamentsPage() {
+export default function TournamentsPage({ user }: { user: User }) {
   const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [loading, setLoading] = useState(true)
   const [meta, setMeta] = useState<Meta>({ countries: [] })
@@ -27,16 +33,17 @@ export default function TournamentsPage() {
   const [editing, setEditing] = useState<Tournament | null>(null)
   const [form, setForm] = useState(emptyForm)
   const navigate = useNavigate()
+  const token = localStorage.getItem('token')
 
   const load = () => {
-    fetch('/api/tournaments')
+    fetch('/api/tournaments', { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((data) => { setTournaments(Array.isArray(data) ? data : []); setLoading(false) })
   }
 
   useEffect(() => {
-    fetch('/api/meta').then((r) => r.json()).then(setMeta)
-  }, [])
+    fetch('/api/meta', { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()).then(setMeta)
+  }, [token])
 
   useEffect(() => { load() }, [])
 
@@ -58,7 +65,7 @@ export default function TournamentsPage() {
   const handleDelete = async (e: React.MouseEvent, id: number) => {
     e.stopPropagation()
     if (!confirm('Delete this tournament?')) return
-    await fetch(`/api/tournaments/${id}`, { method: 'DELETE' })
+    await fetch(`/api/tournaments/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
     load()
   }
 
@@ -71,9 +78,9 @@ export default function TournamentsPage() {
       country_id: Number(form.country_id),
     }
     if (modal === 'add') {
-      await fetch('/api/tournaments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      await fetch('/api/tournaments', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) })
     } else if (editing) {
-      await fetch(`/api/tournaments/${editing.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      await fetch(`/api/tournaments/${editing.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) })
     }
     setModal(null)
     load()
@@ -89,7 +96,7 @@ export default function TournamentsPage() {
     <Page>
       <Header>
         <Title>Tournaments</Title>
-        <AddBtn onClick={openAdd}>+ Add Tournament</AddBtn>
+        {user.role === 'ADMIN' && <AddBtn onClick={openAdd}>+ Add Tournament</AddBtn>}
       </Header>
 
       {loading && <Message>Loading...</Message>}
@@ -100,8 +107,12 @@ export default function TournamentsPage() {
             <CardTop>
               <CardName>{t.name}</CardName>
               <CardActions>
-                <ActionBtn onClick={(e) => openEdit(e, t)}>Edit</ActionBtn>
-                <ActionBtn $danger onClick={(e) => handleDelete(e, t.id)}>Del</ActionBtn>
+                {user.role === 'ADMIN' && (
+                  <>
+                    <ActionBtn onClick={(e) => openEdit(e, t)}>Edit</ActionBtn>
+                    <ActionBtn $danger onClick={(e) => handleDelete(e, t.id)}>Del</ActionBtn>
+                  </>
+                )}
               </CardActions>
             </CardTop>
             <CardSeason>{t.season}</CardSeason>
@@ -121,7 +132,7 @@ export default function TournamentsPage() {
         ))}
       </Grid>
 
-      {modal && (
+      {modal && user.role === 'ADMIN' && (
         <Modal title={modal === 'add' ? 'Add Tournament' : 'Edit Tournament'} onClose={() => setModal(null)}>
           <Field><Label>Name</Label><Input {...f('name')} /></Field>
           <Field><Label>Season (e.g. 2024/25)</Label><Input {...f('season')} /></Field>

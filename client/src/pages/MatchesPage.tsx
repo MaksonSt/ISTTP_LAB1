@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
 import Modal, { Field, Label, Input, Select, FormActions, BtnPrimary, BtnSecondary } from '../components/Modal'
 
+interface User {
+  id: number
+  email: string
+  role: 'USER' | 'ADMIN'
+}
+
 interface Match {
   id: number
   match_date: string
@@ -25,7 +31,7 @@ const emptyForm = {
   match_date: '', home_score: '', away_score: '', referee_id: '',
 }
 
-export default function MatchesPage() {
+export default function MatchesPage({ user }: { user: User }) {
   const [matches, setMatches] = useState<Match[]>([])
   const [meta, setMeta] = useState<Meta>({ tournaments: [], teams: [], referees: [] })
   const [selectedTournament, setSelectedTournament] = useState<number | null>(null)
@@ -34,15 +40,16 @@ export default function MatchesPage() {
   const [editing, setEditing] = useState<Match | null>(null)
   const [form, setForm] = useState(emptyForm)
   const navigate = useNavigate()
+  const token = localStorage.getItem('token')
 
   useEffect(() => {
-    fetch('/api/meta').then((r) => r.json()).then(setMeta)
-  }, [])
+    fetch('/api/meta', { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()).then(setMeta)
+  }, [token])
 
   const load = (tournamentId: number | null) => {
     setLoading(true)
     const url = tournamentId ? `/api/matches?tournamentId=${tournamentId}` : '/api/matches'
-    fetch(url)
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((data) => { setMatches(Array.isArray(data) ? data : []); setLoading(false) })
   }
@@ -69,7 +76,7 @@ export default function MatchesPage() {
   const handleDelete = async (e: React.MouseEvent, id: number) => {
     e.stopPropagation()
     if (!confirm('Delete this match?')) return
-    await fetch(`/api/matches/${id}`, { method: 'DELETE' })
+    await fetch(`/api/matches/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
     load(selectedTournament)
   }
 
@@ -84,9 +91,9 @@ export default function MatchesPage() {
       referee_id: form.referee_id ? Number(form.referee_id) : null,
     }
     if (modal === 'add') {
-      await fetch('/api/matches', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      await fetch('/api/matches', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) })
     } else if (editing) {
-      await fetch(`/api/matches/${editing.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      await fetch(`/api/matches/${editing.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) })
     }
     setModal(null)
     load(selectedTournament)
@@ -109,7 +116,7 @@ export default function MatchesPage() {
     <Page>
       <Header>
         <Title>Matches</Title>
-        <AddBtn onClick={openAdd}>+ Add Match</AddBtn>
+        {user.role === 'ADMIN' && <AddBtn onClick={openAdd}>+ Add Match</AddBtn>}
       </Header>
 
       <Filters>
@@ -145,8 +152,12 @@ export default function MatchesPage() {
                   {m.referees ? `${m.referees.first_name[0]}. ${m.referees.last_name}` : ''}
                 </RefCol>
                 <RowActions onClick={(e) => e.stopPropagation()}>
-                  <ActionBtn onClick={(e) => openEdit(e, m)}>Edit</ActionBtn>
-                  <ActionBtn $danger onClick={(e) => handleDelete(e, m.id)}>Del</ActionBtn>
+                  {user.role === 'ADMIN' && (
+                    <>
+                      <ActionBtn onClick={(e) => openEdit(e, m)}>Edit</ActionBtn>
+                      <ActionBtn $danger onClick={(e) => handleDelete(e, m.id)}>Del</ActionBtn>
+                    </>
+                  )}
                 </RowActions>
               </MatchRow>
             ))}
@@ -156,7 +167,7 @@ export default function MatchesPage() {
 
       {!loading && matches.length === 0 && <Message>No matches found</Message>}
 
-      {modal && (
+      {modal && user.role === 'ADMIN' && (
         <Modal title={modal === 'add' ? 'Add Match' : 'Edit Match'} onClose={() => setModal(null)}>
           <Field>
             <Label>Tournament</Label>

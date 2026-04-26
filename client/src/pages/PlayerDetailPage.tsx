@@ -26,7 +26,10 @@ export default function PlayerDetailPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch(`/api/players/${id}`)
+    const token = localStorage.getItem('token')
+    fetch(`/api/players/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
       .then((r) => r.json())
       .then((data) => { setPlayer(data); setLoading(false) })
   }, [id])

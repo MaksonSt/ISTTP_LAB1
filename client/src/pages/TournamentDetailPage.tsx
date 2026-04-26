@@ -39,17 +39,18 @@ export default function TournamentDetailPage() {
   const [tournament, setTournament] = useState<TournamentDetail | null>(null)
   const [standings, setStandings] = useState<StandingRow[]>([])
   const [loading, setLoading] = useState(true)
+  const token = localStorage.getItem('token')
 
   useEffect(() => {
     Promise.all([
-      fetch(`/api/tournaments/${id}`).then((r) => r.json()),
-      fetch(`/api/tournaments/${id}/standings`).then((r) => r.json()),
+      fetch(`/api/tournaments/${id}`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()),
+      fetch(`/api/tournaments/${id}/standings`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()),
     ]).then(([t, s]) => {
       setTournament(t)
       setStandings(Array.isArray(s) ? s : [])
       setLoading(false)
     })
-  }, [id])
+  }, [id, token])
 
   if (loading) return <Message>Loading...</Message>
   if (!tournament) return <Message>Tournament not found</Message>

@@ -10,18 +10,24 @@ import {
   Res,
   UseInterceptors,
   UploadedFile,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import type { Response } from 'express';
 import * as ExcelJS from 'exceljs';
 import { PlayersService } from './players.service';
+import { Roles, RolesGuard } from '../auth/roles.guard';
+import { role } from '@prisma/client';
 
 @Controller('players')
 export class PlayersController {
   constructor(private playersService: PlayersService) {}
 
   @Get('export')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles([role.ADMIN])
   async exportExcel(@Res() res: Response) {
     const players = await this.playersService.findAll();
 
@@ -62,31 +68,41 @@ export class PlayersController {
 
   @Post('import')
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles([role.ADMIN])
   importExcel(@UploadedFile() file: Express.Multer.File) {
     return this.playersService.importExcel(file.buffer);
   }
 
   @Get()
+  @UseGuards(AuthGuard('jwt'))
   findAll(@Query('search') search?: string) {
     return this.playersService.findAll(search);
   }
 
   @Get(':id')
+  @UseGuards(AuthGuard('jwt'))
   findOne(@Param('id') id: string) {
     return this.playersService.findOne(+id);
   }
 
   @Post()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles([role.ADMIN])
   create(@Body() body: any) {
     return this.playersService.create(body);
   }
 
   @Put(':id')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles([role.ADMIN])
   update(@Param('id') id: string, @Body() body: any) {
     return this.playersService.update(+id, body);
   }
 
   @Delete(':id')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles([role.ADMIN])
   remove(@Param('id') id: string) {
     return this.playersService.remove(+id);
   }

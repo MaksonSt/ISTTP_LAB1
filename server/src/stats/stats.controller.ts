@@ -1,7 +1,10 @@
-import { Controller, Get, Res } from '@nestjs/common';
+import { Controller, Get, Res, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 import * as ExcelJS from 'exceljs';
 import { PrismaService } from '../prisma.service';
+import { Roles, RolesGuard } from '../auth/roles.guard';
+import { role } from '@prisma/client';
 
 @Controller('stats')
 export class StatsController {
@@ -89,11 +92,14 @@ export class StatsController {
   }
 
   @Get()
+  @UseGuards(AuthGuard('jwt'))
   getAll() {
     return this.computeStats();
   }
 
   @Get('export')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles([role.ADMIN])
   async exportExcel(@Res() res: Response) {
     const { topScorers, goalsByTeam, playersByPosition } = await this.computeStats();
 
